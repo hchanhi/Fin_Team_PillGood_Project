@@ -7,7 +7,7 @@ import axios from "axios";
 import Swal from 'sweetalert2';
 
 import { getToken, onMessage } from "firebase/messaging";
-import messaging from "../App";
+import { messaging, VAPID_KEY } from "../firebase";
 
 
 function MyPill() {
@@ -43,7 +43,7 @@ function MyPill() {
     function deletePill(index) {
         let params = { id: (card[index]).id };
         let slot = card[index].slot;
-        getToken(messaging, { vapidKey: 'BOUH7VnfqJhHUd9CXxw1_QwjB_lScFbFAgPb9P-JOcNE8VavuYuOgSw5s9dLiTZfS0yYGv5RI1dCkYSeLxxvmmI' })
+        getToken(messaging, { vapidKey: VAPID_KEY })
             .then((currentToken) => {
                 unsubscribeTokenToTopic(currentToken, slot);
             });
@@ -62,27 +62,11 @@ function MyPill() {
     }
 
 
+    // 토픽 구독 해지는 서버(Admin SDK)를 통해서만 수행한다
     function unsubscribeTokenToTopic(token, topic) {
-        fetch('https://iid.googleapis.com/iid/v1:batchRemove', {
-            method: 'POST',
-            headers: new Headers({
-                'Content-Type': 'application/json',
-                'Authorization': 'key=' + 'AAAADsLVKyE:APA91bHI_UNkgq0sEAf5UcR01heTflDp8PDs8CI5Lpb3G8HHLUNv05N1STvF0OaAN_W0jVXoHTFdxO_KAkw4Gc5fdrvPxNfnzjtc9IpjJPxJz6fcHQUEpY9W-Lr7wJH-TpgII5O8_84E'
-            }),
-            body: JSON.stringify({
-                "to": "/topics/" + topic,
-                "registration_tokens": [token]
-            })
-
-
-        }).then(response => {
-            if (response.status < 200 || response.status >= 400) {
-                throw 'Error unsubscribing to topic: ' + response.status + ' - ' + response.text();
-            }
-            console.log('Unsubscribed to "' + topic + '"');
-        }).catch(error => {
-            console.error(error);
-        });
+        axios.post('/fcm/unsubscribe', { token, topic })
+            .then(() => console.log('Unsubscribed to "' + topic + '"'))
+            .catch(error => console.error(error));
     }
 
     useEffect(() => {

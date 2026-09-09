@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import axios from "axios";
 
 import { useState } from "react";
-import { getNickName } from '../jwtCheck.js';
+import { getNickName } from '../jwtCheck';
 import { getToken } from "firebase/messaging";
-import messaging from "../App";
+import { messaging, VAPID_KEY } from "../firebase";
 
 
 function AddPill() {
@@ -21,33 +21,11 @@ function AddPill() {
 
 
 
+    // 토픽 구독은 서버(Admin SDK)를 통해서만 수행한다
     function subscribeTokenToTopic(token, topic) {
-        fetch('https://iid.googleapis.com/iid/v1/' + token + '/rel/topics/' + topic, {
-            method: 'POST',
-            headers: new Headers({
-
-                'Authorization': 'key=' + 'AAAADsLVKyE:APA91bHI_UNkgq0sEAf5UcR01heTflDp8PDs8CI5Lpb3G8HHLUNv05N1STvF0OaAN_W0jVXoHTFdxO_KAkw4Gc5fdrvPxNfnzjtc9IpjJPxJz6fcHQUEpY9W-Lr7wJH-TpgII5O8_84E'
-            })
-        }).then(response => {
-            if (response.status < 200 || response.status >= 400) {
-                throw 'Error subscribing to topic: ' + response.status + ' - ' + response.text();
-            }
-            console.log('Subscribed to "' + topic + '"');
-        }).catch(error => {
-            console.error(error);
-        });
-    }
-
-
-
-    function Topic1(Token) {
-        subscribeTokenToTopic(Token, "MORNING");
-    }
-    function Topic2(Token) {
-        subscribeTokenToTopic(Token, "LUNCH");
-    }
-    function Topic3(Token) {
-        subscribeTokenToTopic(Token, "DINNER");
+        axios.post('/fcm/subscribe', { token, topic })
+            .then(() => console.log('Subscribed to "' + topic + '"'))
+            .catch(error => console.error(error));
     }
 
 
@@ -64,16 +42,10 @@ function AddPill() {
             .then(function (res) {
                 console.log('성공');
                 navigate('/mypill');
-                getToken(messaging, { vapidKey: 'BOUH7VnfqJhHUd9CXxw1_QwjB_lScFbFAgPb9P-JOcNE8VavuYuOgSw5s9dLiTZfS0yYGv5RI1dCkYSeLxxvmmI' })
+                getToken(messaging, { vapidKey: VAPID_KEY })
                     .then((currentToken) => {
                         if (currentToken) {
-                            if (body.slot === 'MORNING') {
-                                Topic1(currentToken);
-                            } else if (body.slot === 'LUNCH') {
-                                Topic2(currentToken);
-                            } else if (body.slot === 'DINNER') {
-                                Topic3(currentToken);
-                            }
+                            subscribeTokenToTopic(currentToken, body.slot);
                             console.log('허가!');
                             console.log(currentToken);
                             // Send the token to your server and update the UI if necessary

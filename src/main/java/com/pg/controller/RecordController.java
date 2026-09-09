@@ -1,6 +1,8 @@
 package com.pg.controller;
 
+import com.pg.config.CurrentUser;
 import com.pg.model.Record;
+import com.pg.service.PrincipalDetails;
 import com.pg.service.RecordService;
 import com.pg.service.TakingLogService;
 import lombok.RequiredArgsConstructor;
@@ -20,8 +22,10 @@ public class RecordController {
 
     final private RecordService recordService;
 
+    // 대상 유저는 항상 로그인한 본인이다
     @GetMapping("/supplements/record")
-    public Map<String, Integer> getContinuousDose(String nickname){
+    public Map<String, Integer> getContinuousDose(@CurrentUser PrincipalDetails currentUser){
+        String nickname = currentUser.getNickname();
         List<Integer> pillList = takingLogService.selectTakingLogByUser(nickname);
         Map<String, Integer> record = new HashMap<>();
         int continuousDose = 0;

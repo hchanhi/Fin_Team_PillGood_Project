@@ -1,51 +1,33 @@
 package com.pg.controller;
 
-import com.pg.payload.CommResponse;
+import com.google.firebase.messaging.FirebaseMessagingException;
 import com.pg.service.PushNotificationService;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
+// FCM 토픽 구독 관리. 구독/해지는 서버의 Admin SDK로만 수행한다(클라이언트에 서버 키 노출 금지).
 @RestController
-@Slf4j
+@RequiredArgsConstructor
+@RequestMapping("/fcm")
 public class PushApiController {
 
-    /*
-     * 푸시 알람 요청
-     * @param title
-     * @param body
-     * @throws IOException
-     */
-    @PostMapping("/fcm")
-    public ResponseEntity<?> reqFcm(
-            @RequestParam(required = true) String title,
-            @RequestParam(required = true) String body,
-            @RequestParam(required = true) String topic
-    ) {
+    private final PushNotificationService pushNotificationService;
 
-        log.info("** title : {}",title);
-        log.info("** body : {}",body);
-        log.info("** body : {}",topic);
+    @PostMapping("/subscribe")
+    public ResponseEntity<?> subscribe(@RequestBody Map<String, String> param) throws FirebaseMessagingException {
+        pushNotificationService.subscribe(param.get("token"), param.get("topic"));
+        return ResponseEntity.ok().build();
+    }
 
-
-        CommResponse res = new CommResponse();
-
-        try {
-
-            PushNotificationService.sendCommonMessage(title, body, topic);
-//            res.setCdResult(Constant.SUCCESS);
-
-        } catch(Exception e) {
-            log.error(e.getMessage());
-//            res.setCdResult(Constant.FAILED);
-            res.setMsgResult("처리중 에러 발생");
-            return new ResponseEntity<>(res, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-
-        return ResponseEntity.ok(res);
+    @PostMapping("/unsubscribe")
+    public ResponseEntity<?> unsubscribe(@RequestBody Map<String, String> param) throws FirebaseMessagingException {
+        pushNotificationService.unsubscribe(param.get("token"), param.get("topic"));
+        return ResponseEntity.ok().build();
     }
 }

@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.Collections;
 
@@ -84,14 +84,10 @@ public class AuthController {
                 .map(refreshTokenService::verifyExpiration)
                 .map(RefreshToken::getUser)
                 .map(user -> {
-                    Authentication authentication = authenticationManager.authenticate(
-                            new UsernamePasswordAuthenticationToken(
-                                    user.getEmail(), user.getPassword()
-                            )
-                    );
-                    String token = tokenProvider.generateToken(authentication);
+                    // 재인증 없이 유저 정보로 새 액세스 토큰 발급
+                    // (기존 코드는 bcrypt 해시를 평문 취급해 재인증하다 항상 실패했음)
+                    String token = tokenProvider.generateToken(user.getId(), user.getNickname());
                     return ResponseEntity.ok(new TokenRefreshReesponse(token, requestRefreshToken));
-
                 })
                 .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "리프레시 토큰이 데이터베이스에 없습니다!"));
     }

@@ -2,19 +2,19 @@ import './App.css';
 import { useEffect, useState } from "react";
 
 import { Routes, Route } from "react-router-dom";
-import Header from './Header.js';
-import Footer from './Footer.js';
-import Main from "./Main.js";
-import PreMain from "./PreMain.js";
-import Reward from "./reward/Reward.js";
-import User from "./user/User.js";
-import AddPill from "./alarm/AddPill.js";
-import MyPill from "./alarm/MyPill.js";
-import Signup from "./login/Signup.js";
+import Header from './Header';
+import Footer from './Footer';
+import Main from "./Main";
+import PreMain from "./PreMain";
+import Reward from "./reward/Reward";
+import User from "./user/User";
+import AddPill from "./alarm/AddPill";
+import MyPill from "./alarm/MyPill";
+import Signup from "./login/Signup";
 import Login2 from "./login/Login2";
-import { isAuth, getNickName } from './jwtCheck.js';
-import FindPassword from "./login/FindPassword.js";
-import EditPassword from "./login/EditPassword.js";
+import { isAuth, getNickName } from './jwtCheck';
+import FindPassword from "./login/FindPassword";
+import EditPassword from "./login/EditPassword";
 
 
 function App() {

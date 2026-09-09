@@ -38,7 +38,12 @@ public class SupplementsService {
         return supplementsRepository.findAllByUser(user);
     }
 
-    public void deleteById(Long id){
+    // 본인 소유의 영양제만 삭제 가능
+    public void deleteById(Long id, Long requesterId){
+        Supplements supplements = supplementsRepository.findById(id).orElse(null);
+        if (supplements == null || !supplements.getUser().getId().equals(requesterId)) {
+            throw new IllegalArgumentException("본인의 영양제만 삭제할 수 있습니다.");
+        }
         takingLogRepository.deleteAllBySupplementsId(id);
         supplementsRepository.deleteById(id);
     }

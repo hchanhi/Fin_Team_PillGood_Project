@@ -1,14 +1,14 @@
 package com.pg.service;
 
+import com.pg.exception.BadRequestException;
 import com.pg.model.User;
 import com.pg.repository.UserRepository;
 import com.pg.util.RedisUtil;
-import com.mysql.cj.exceptions.PasswordExpiredException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.webjars.NotFoundException;
 
 import java.util.UUID;
 
@@ -16,7 +16,7 @@ import java.util.UUID;
 @Slf4j
 public class AuthService {
 
-    final String REDIS_CHANGE_PASSWORD_PREFIX="CPW";
+    static final String REDIS_CHANGE_PASSWORD_PREFIX = "CPW";
 
     @Autowired
     private UserRepository userRepository;
@@ -30,50 +30,47 @@ public class AuthService {
     @Autowired
     public PasswordEncoder passwordEncoder;
 
+    @Value("${app.password-reset.base-url:http://localhost:3000/user/passwordChange/}")
+    private String changePasswordLink;
 
-
-    // 링크를 전송할 이메일 찾기
-    public User findByEmail(String email) throws NotFoundException {
-        User user = userRepository.findByEmail(email).get();
-        if(user.getEmail().isEmpty()) throw new NotFoundException("멤버가 조회되지 않음");
-        return user;
+    public User findByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadRequestException("멤버가 조회되지 않음"));
     }
 
-    // redis를 통해 key에서 이메일 찾기
-    public boolean isPasswordUuidValidate(String key){
+    // redis에 key가 존재하는지 검증
+    public boolean isPasswordUuidValidate(String key) {
         String email = redisUtil.getData(key);
-        return !email.equals("");
+        return email != null && !email.isEmpty();
     }
 
-    // code가 유효한지 검증
+    // key로 이메일 조회 (만료/오입력 시 예외)
     public String getUserEmailByCode(String code) {
-        String email = redisUtil.getData(code); // 입력 받은 인증 코드(key)를 이용해 email(value)을 꺼낸다.
-        if (email == null) { // email이 존재하지 않으면, 유효 기간 만료이거나 코드 잘못 입력
-            throw new PasswordExpiredException();
+        String email = redisUtil.getData(code);
+        if (email == null) {
+            throw new BadRequestException("만료되었거나 잘못된 코드입니다.");
         }
-         // 해당 email로 user를 꺼낸다.
         return email;
     }
 
-
     // 비밀번호 변경 링크를 이메일로 전송
-    public void requestChangePassword(User user) throws NotFoundException{
-        String CHANGE_PASSWORD_LINK = "http://localhost:3000/user/passwordChange/";
-        if(user == null) throw new NotFoundException("잘못된 경로입니다. 다시 시도해 주세요.");
-        String key = REDIS_CHANGE_PASSWORD_PREFIX+UUID.randomUUID();
-        System.out.println(key);
-        redisUtil.setDataExpire(key, user.getEmail(),60 * 30L);
-        emailService.sendMail(user.getEmail(),"[PillGood] 회원 비밀번호 변경 안내 메일","비밀번호 재설정을 위한 링크를 전송했습니다.\n\n 아래의 링크로 접속해 비밀번호를 재설정해 주세요!\n\n" +  CHANGE_PASSWORD_LINK+key + "\n\n\n\n ");
+    public void requestChangePassword(User user) {
+        if (user == null) throw new BadRequestException("잘못된 경로입니다. 다시 시도해 주세요.");
+        String key = REDIS_CHANGE_PASSWORD_PREFIX + UUID.randomUUID();
+        redisUtil.setDataExpire(key, user.getEmail(), 60 * 30L);
+        emailService.sendMail(user.getEmail(), "[PillGood] 회원 비밀번호 변경 안내 메일",
+                "비밀번호 재설정을 위한 링크를 전송했습니다.\n\n아래의 링크로 접속해 비밀번호를 재설정해 주세요!\n\n" + changePasswordLink + key);
     }
 
     // 링크를 통해 비밀번호 변경 실행
-    public void changePassword(User user,String password) throws NotFoundException{
-        if(user == null) throw new NotFoundException("잘못된 경로입니다. 다시 시도해 주세요");
-        password = passwordEncoder.encode(password);
-        user.setPassword(password);
+    public void changePassword(User user, String password) {
+        if (user == null) throw new BadRequestException("잘못된 경로입니다. 다시 시도해 주세요");
+        user.setPassword(passwordEncoder.encode(password));
         userRepository.save(user);
     }
 
-
-
+    // 사용된 재설정 key는 즉시 만료시켜 재사용을 막는다
+    public void expirePasswordResetKey(String key) {
+        redisUtil.deleteData(key);
+    }
 }

@@ -26,18 +26,19 @@ public class JwtTokenProvider {
 
     // 토큰 생성
     public String generateToken(Authentication authentication) {
+        PrincipalDetails principalDetails = (PrincipalDetails) authentication.getPrincipal();
+        return generateToken(principalDetails.getId(), principalDetails.getNickname());
+    }
 
-        PrincipalDetails principalDetails = (PrincipalDetails)authentication.getPrincipal();
-
+    // 리프레시 등 인증 객체 없이 유저 정보로 직접 발급할 때 사용
+    public String generateToken(Long userId, String nickname) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationInMs);
 
-
-        // 표준 클레임 셋팅
         return Jwts.builder()
-                .setSubject(Long.toString(principalDetails.getId()))
-                .setIssuer(principalDetails.getNickname())
-                .setIssuedAt(new Date())
+                .setSubject(Long.toString(userId))
+                .setIssuer(nickname)
+                .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(getSignKey())
                 .compact();

@@ -65,3 +65,16 @@ application.yml
 pillgood-sdk.json
 
 my-key.pem
+### 로그 / 로컬 산출물 ###
+nohup.out
+*.log
+
+### 시크릿 ###
+.env
+frontend/.env
+
+### 프론트 빌드 산출물 / 캐시 ###
+**/node_modules/
+frontend/build/
+frontend/.firebase/
+src/main/resources/static/
