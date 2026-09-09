@@ -4,7 +4,7 @@ package com.pg.payload.request;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
 
 @Getter
 @Setter

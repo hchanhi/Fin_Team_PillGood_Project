@@ -3,45 +3,34 @@ package com.pg.config;
 
 import com.pg.config.jwt.JwtAuthenticationEntryPoint;
 import com.pg.config.jwt.JwtAuthenticationFilter;
-import com.pg.service.PrincipalDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
 
 
 @Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(
-		securedEnabled = true,
-		jsr250Enabled = true,
-		prePostEnabled = true
-)
-public class SecurityConfig extends WebSecurityConfigurerAdapter {
-
-	@Autowired
-	PrincipalDetailsService principalDetailsService;
+@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
+public class SecurityConfig {
 
 	@Autowired
 	private JwtAuthenticationEntryPoint authEntryPointJwt;
 
-	// authenticationManager Bean 등록
 	@Bean
-	@Override
-	public AuthenticationManager authenticationManagerBean() throws Exception {
-		return super.authenticationManagerBean();
+	public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+		return configuration.getAuthenticationManager();
 	}
 
 	@Bean
@@ -49,48 +38,31 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		return new JwtAuthenticationFilter();
 	}
 
-	@Override
-	protected void configure(AuthenticationManagerBuilder authenticationManagerBuilder) throws Exception {
-		authenticationManagerBuilder
-				.userDetailsService(principalDetailsService)
-				.passwordEncoder(passwordEncoder());
-	}
-
-
-	// 암호화에 필요한 PasswordEncoder Bean 등록
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
 
-	@Override
-	protected void configure(HttpSecurity http) throws Exception {
+	@Bean
+	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		http
-				.cors()
-				.and()
-				.csrf()
-				.disable()
-				.exceptionHandling()
-				.authenticationEntryPoint(authEntryPointJwt)
-				.and()
-				// 토큰으로 security를 적용하기 때문에 session은 stateless로 막음
-				.sessionManagement()
-				.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-				.and()
-				.authorizeRequests()
-				.antMatchers("/**").permitAll()
-				.antMatchers("/api/auth/**","/api/main/**","/api/mypage/**").permitAll()
-				.antMatchers("/api/user/**", "/api/users/{id}/**").permitAll()
-				.antMatchers("/api/user/checkUsernameAvailability", "/api/user/checkEmailAvailability").permitAll()
-				.antMatchers( "/api/supplements/**").permitAll()
-				.antMatchers("/user/**").permitAll()
-				.antMatchers("/fcm/**").permitAll()
-				.antMatchers("/static/**").permitAll()
-				.antMatchers("/firebase-messaging-sw.js").permitAll()
-				.antMatchers(HttpMethod.GET, "/mypill").permitAll()
-				// 위 경로 이외의 토큰을 사용하는 경우 접근할 수 있도록 한다.
-				.anyRequest().authenticated();
-		// JWT security filter 추가
+				.cors(Customizer.withDefaults())
+				.csrf(csrf -> csrf.disable())
+				.exceptionHandling(ex -> ex.authenticationEntryPoint(authEntryPointJwt))
+				// 토큰 기반 인증이므로 세션은 stateless
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.authorizeHttpRequests(auth -> auth
+						// 비로그인 허용: 인증, 가입 중복 체크, 비밀번호 재설정(이메일 링크) 플로우
+						.requestMatchers("/api/auth/**").permitAll()
+						.requestMatchers("/api/user/checkNicknameAvailability", "/api/user/checkEmailAvailability").permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/user/passwordChange/*").permitAll()
+						.requestMatchers(HttpMethod.POST, "/api/user/password").permitAll()
+						.requestMatchers(HttpMethod.PUT, "/api/user/password").permitAll()
+						// 그 외 API와 FCM은 로그인 필수
+						.requestMatchers("/api/**", "/fcm/**").authenticated()
+						// 정적 리소스와 SPA 라우트
+						.anyRequest().permitAll());
 		http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+		return http.build();
 	}
 }

@@ -3,8 +3,8 @@ import { React, useEffect, useState } from "react";
 import styled from "styled-components";
 import { Card } from "react-bootstrap";
 import './Main.css';
-import CheckPill from './CheckPill.js';
-import { getNickName, isAuth } from './jwtCheck.js';
+import CheckPill from './CheckPill';
+import { getNickName, isAuth } from './jwtCheck';
 import axios from "axios";
 
 let Wrapper = styled.div`

@@ -13,6 +13,17 @@
 
 Spring Boot의 MVC패턴과 React.js를 기반으로 만든 영양제 복용 기록 및 알림 서비스 입니다. 지속적 복용을 돕기 위해 게이미피케이션 요소를 추가하고 웹 푸시 기능을 구현했습니다. 
 
+# 실행 방법
+
+- 요구사항: JDK 21+(Gradle 툴체인이 자동 다운로드), Node.js 18+, MySQL, Redis
+- 백엔드 설정: `src/main/resources/application-example.yml`을 `application.yml`로 복사해 값 입력 (application.yml과 firebase 키는 커밋 금지)
+- FCM 사용 시: Firebase 서비스 계정 키를 `src/main/resources/firebase/pillgood-sdk.json`에 배치
+- 백엔드 실행: `./gradlew bootRun`
+- 프론트 실행: `cd frontend && npm install && npm run dev` (Vite, http://localhost:3000)
+- 통합 빌드: `./gradlew build` (React 빌드 결과가 jar에 포함됨)
+
+> 스택: Spring Boot 3.5 / Java 21 / React 18 + Vite
+
 # 사용기술
 
 ### Back-end

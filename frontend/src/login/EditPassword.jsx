@@ -67,7 +67,7 @@ const Register = (props) => {
 
         await axios
             .put('/api/user/password', {
-                email: email,
+                key: key,
                 password: password,
             })
             .then(() => {

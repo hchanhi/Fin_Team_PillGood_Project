@@ -1,0 +1,48 @@
+# application.yml 예시 — 이 파일을 application.yml로 복사하고 실제 값을 채워 넣으세요.
+# application.yml과 firebase/pillgood-sdk.json은 절대 커밋하지 않습니다(.gitignore 처리됨).
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/pillgood?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: your-db-user
+    password: your-db-password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+  sql:
+    init:
+      mode: never   # 초기 데이터(data.sql)를 넣으려면 always로 변경
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: your-email@example.com
+    password: your-app-password
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+gg:
+  app:
+    # 최소 256bit(32자 이상) 랜덤 문자열. 예: openssl rand -base64 48
+    jwtSecret: change-me-to-a-long-random-secret-at-least-32-chars
+    jwtExpirationMs: 3600000
+    jwtRefreshExpirationInMs: 86400000
+
+app:
+  cors:
+    allowedOrigins: http://localhost:3000
+  password-reset:
+    base-url: http://localhost:3000/user/passwordChange/
